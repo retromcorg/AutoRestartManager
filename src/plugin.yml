@@ -1,0 +1,6 @@
+name: AutoRestartManager
+description: An Automatic Restart Manager for Beta 1.7.3
+main: com.johnymuffin.beta.autorestartmanager.AutoRestartManager
+version: 1.0.0
+authors:
+  - JohnyMuffin
