@@ -6,7 +6,7 @@
 
     <groupId>com.johnymuffin.beta</groupId>
     <artifactId>AutoRestartManager</artifactId>
-    <version>1.0.2-SNAPSHOT</version>
+    <version>1.0.3</version>
     <name>AutoRestartManager</name>
     <description>An Automatic Restart Manager for Beta 1.7.3</description>
 

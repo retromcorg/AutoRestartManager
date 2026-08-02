@@ -5,9 +5,6 @@ import org.bukkit.util.config.Configuration;
 import java.io.File;
 
 public class ARMConfig extends Configuration {
-    private ARMConfig armConfig;
-    private AutoRestartManager plugin;
-
     public ARMConfig(AutoRestartManager plugin) {
         super(new File(plugin.getDataFolder(), "config.yml"));
         this.reload();

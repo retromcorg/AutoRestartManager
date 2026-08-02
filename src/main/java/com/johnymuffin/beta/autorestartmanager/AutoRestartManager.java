@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -22,8 +23,10 @@ public class AutoRestartManager extends JavaPlugin {
     private int restartTimeExtension;
     private int maximumPlayers;
     private int restartCountdownTime;
+    private int remainingRestartCountdownTime;
     private int minuteCount;
-    private boolean sequenceStarted;
+    private volatile boolean sequenceStarted;
+    private volatile boolean shutdownStarted;
 
 
     @Override
@@ -40,16 +43,21 @@ public class AutoRestartManager extends JavaPlugin {
         maximumPlayers = config.getConfigInteger("maximum-players");
         restartCountdownTime = config.getConfigInteger("restart-countdown-time");
         //Default Values
+        remainingRestartCountdownTime = restartCountdownTime;
         minuteCount = 0;
         sequenceStarted = false;
+        shutdownStarted = false;
 
-        //Run timer in Async thread so TPS doesn't effect the actual time
-        Bukkit.getServer().getScheduler().scheduleAsyncRepeatingTask(plugin, () -> {
-            //Schedule code to run on the main thread
-            Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-                minuteUpdate();
-            }, 0L);
-        }, 20l, 20l * 60);
+        Bukkit.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
+            minuteUpdate();
+        }, 20L, 20L * 60);
+
+        getServer().getPluginManager().registerEvent(
+                Event.Type.PLAYER_PRELOGIN,
+                new RestartPlayerListener(this),
+                Event.Priority.Highest,
+                this
+        );
 
 
     }
@@ -66,8 +74,9 @@ public class AutoRestartManager extends JavaPlugin {
             if (minuteCount < restartTime) {
                 return;
             }
-            if (minuteCount > (restartTime + restartTimeExtension)) {
+            if (minuteCount >= (restartTime + restartTimeExtension)) {
                 startRestartTask();
+                return;
             }
             if (Bukkit.getServer().getOnlinePlayers().length < maximumPlayers) {
                 startRestartTask();
@@ -75,11 +84,11 @@ public class AutoRestartManager extends JavaPlugin {
             return;
         }
         //Handle restart task countdown
-        if (restartCountdownTime <= 0) {
+        if (remainingRestartCountdownTime <= 0) {
+            shutdownStarted = true;
             log.info("[" + pluginName + "] Shutting Down Server, Server Is Restarting.");
             Bukkit.getServer().broadcastMessage(ChatColor.RED + "The server is restarting.");
             Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(plugin, () -> {
-                //Shutdown server
                 log.info("[" + pluginName + "] Saving Players");
                 Bukkit.getServer().savePlayers();
                 log.info("[" + pluginName + "] Saving Worlds");
@@ -92,21 +101,27 @@ public class AutoRestartManager extends JavaPlugin {
                 }
                 Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(plugin, () -> {
                     Bukkit.shutdown();
-                }, 10);
-            }, 20 * 6);
-
-            Bukkit.getServer().shutdown();
+                }, 20 * 5);
+            }, 20 * 5);
+            return;
         }
-        Bukkit.getServer().broadcastMessage(ChatColor.RED + "The server will restart in " + restartCountdownTime + " minutes.");
-        restartCountdownTime = restartCountdownTime - 1;
+        Bukkit.getServer().broadcastMessage(ChatColor.RED + "The server will restart in " + remainingRestartCountdownTime + " minutes.");
+        remainingRestartCountdownTime = remainingRestartCountdownTime - 1;
 
 
     }
 
     private void startRestartTask() {
-        log.info("[" + pluginName + "] A restart has been scheduled for " + restartCountdownTime + "minutes.");
+        remainingRestartCountdownTime = restartCountdownTime;
+        log.info("[" + pluginName + "] A restart has been scheduled for " + restartCountdownTime + " minutes.");
         sequenceStarted = true;
     }
 
+    public boolean isRestartSequenceStarted() {
+        return sequenceStarted;
+    }
 
+    public boolean isShutdownStarted() {
+        return shutdownStarted;
+    }
 }
