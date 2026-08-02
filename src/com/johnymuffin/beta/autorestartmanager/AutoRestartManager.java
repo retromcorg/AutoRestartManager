@@ -60,7 +60,6 @@ public class AutoRestartManager extends JavaPlugin {
     }
 
     private void minuteUpdate() {
-        log.info("[" + pluginName + "] " + minuteCount + "/" + restartTime);
         minuteCount = minuteCount + 1;
         //Handle normal restart countdown
         if (!sequenceStarted) {
@@ -77,21 +76,26 @@ public class AutoRestartManager extends JavaPlugin {
         }
         //Handle restart task countdown
         if (restartCountdownTime <= 0) {
-            //Shutdown server
-            log.info("[" + pluginName + "] Saving Players");
-            Bukkit.getServer().savePlayers();
-            log.info("[" + pluginName + "] Saving Worlds");
-            for (World world : Bukkit.getServer().getWorlds()) {
-                world.save();
-            }
-            log.info("[" + pluginName + "] Kicking Players");
-            for (Player p : Bukkit.getServer().getOnlinePlayers()) {
-                p.kickPlayer("The server is restarting, please reconnect in a few minutes");
-            }
-            log.info("[" + pluginName + "] Shutting Down Server, Server Is Rhystarting");
+            log.info("[" + pluginName + "] Shutting Down Server, Server Is Restarting.");
+            Bukkit.getServer().broadcastMessage(ChatColor.RED + "The server is restarting.");
+            Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                //Shutdown server
+                log.info("[" + pluginName + "] Saving Players");
+                Bukkit.getServer().savePlayers();
+                log.info("[" + pluginName + "] Saving Worlds");
+                for (World world : Bukkit.getServer().getWorlds()) {
+                    world.save();
+                }
+                log.info("[" + pluginName + "] Kicking Players");
+                for (Player p : Bukkit.getServer().getOnlinePlayers()) {
+                    p.kickPlayer("The server is restarting, please reconnect in a few minutes");
+                }
+                Bukkit.getServer().getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                    Bukkit.shutdown();
+                }, 10);
+            }, 20 * 6);
 
-            ARMCommandSender armCommandSender = new ARMCommandSender();
-            armCommandSender.runCommand("/stop");
+            Bukkit.getServer().shutdown();
         }
         Bukkit.getServer().broadcastMessage(ChatColor.RED + "The server will restart in " + restartCountdownTime + " minutes.");
         restartCountdownTime = restartCountdownTime - 1;
