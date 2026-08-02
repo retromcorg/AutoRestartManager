@@ -6,3 +6,7 @@ libs/
 out/
 
 *.iml
+
+target/
+
+*.jar
