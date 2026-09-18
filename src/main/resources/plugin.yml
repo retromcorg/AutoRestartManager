@@ -2,6 +2,5 @@ name: ${project.name}
 description: ${project.description}
 main: com.johnymuffin.beta.autorestartmanager.AutoRestartManager
 version: ${project.version}
-visible: false
 authors:
   - JohnyMuffin
